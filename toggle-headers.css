@@ -1,0 +1,14 @@
+#toggle_headers {
+    float: right;
+    background-color: #f8f8f8;
+    border-color: #f8f8f8;
+}
+
+#toggle_headers:hover {
+    background-color: #e6e6e6;
+    border-color: #c0c0c0;
+}
+
+#toggle_headers:active {
+    border-color: #f8f8f8;
+}
