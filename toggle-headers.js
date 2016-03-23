@@ -64,7 +64,11 @@ define( [
   var load_ipython_extension = function() {
     load_css('./toggle-headers.css');
     menubar_button();
-    IPython.keyboard_manager.command_shortcuts.add_shortcuts(kbd_shortcuts);
+    //IPython.keyboard_manager.command_shortcuts.add_shortcuts(kbd_shortcuts);
+    var action = IPython.keyboard_manager.actions.register(kbd_shortcuts['Shift-t'],
+							   'toggle-headers',
+							   'notebook-extensions');
+    IPython.keyboard_manager.command_shortcuts.add_shortcut('Shift-t', action);
   };
 
   return {
