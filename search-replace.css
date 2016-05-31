@@ -21,6 +21,7 @@
 
 .searchbar_input {
   width: 200px;
+  padding: 6px 2px 6px 2px;
 }
 
 .btn-group button {
@@ -32,6 +33,6 @@
   background-color: red;
 }
 
-button#searchbar_wrap, button#searchbar_case_sensitive {
+button#searchbar_search {
   float: right;
 }

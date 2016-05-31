@@ -38,13 +38,22 @@ define([
     if( replace )
       replace = $('#searchbar_replace_text').val();
     var findString = $('#searchbar_search_text').val();
+    var caseInsensitive = ! $('#searchbar_case_sensitive').hasClass('active');
     var do_wrap = $('#searchbar_wrap').hasClass('active');
-    var case_sensitive = !$('#searchbar_case_sensitive').hasClass('active');
 
     // See what cell is currently selected
     var ncells = IPython.notebook.ncells();
     var cindex = IPython.notebook.get_selected_index();
     var cell = IPython.notebook.get_cell( cindex );
+
+    // If we're replacing, and there's already a selected match, replace it
+    if( replace ) {
+	var s = cell.code_mirror.getSelection();
+	if( s &&
+	    ( (!caseInsensitive && s==findString) ||
+	      (caseInsensitive && s.toUpperCase()==findString.toUpperCase())) )
+	    cell.code_mirror.replaceSelection(replace,'around');
+    }
       
     // Search across all cells in the notebook, starting from the current one
     for( var i=1; i<=ncells; i++ ) {
@@ -54,13 +63,12 @@ define([
 
       // Search in this cell, from the cursor current position
       var cur = cell.code_mirror.getCursor();
-      var find = cell.code_mirror.getSearchCursor(findString,cur,case_sensitive);
+      var find = cell.code_mirror.getSearchCursor(findString,cur,caseInsensitive);
+
       if( find.find() == true ) {
 	// found! Select it and return
 	IPython.notebook.scroll_cell_percent( cindex, 50 );
 	cell.code_mirror.setSelection(find.pos.from,find.pos.to);
-	if( replace )
-	  cell.code_mirror.replaceSelection(replace,'around');
 	cell.code_mirror.focus();
 	return;
       }
@@ -100,14 +108,14 @@ define([
                     <div class="btn-group">\
                     <label for="usr">Search text:</label>\
                      <input id="searchbar_search_text" type="text" class="form-control searchbar_input">\
-                     <button id="searchbar_search" class="btn btn-primary fa fa-search searchbar_buttons" title="Search string"></button>\
-                     <button id="searchbar_case_sensitive" class="btn btn-primary searchbar_buttons" data-toggle="button" value="OFF" title="Case sensitive">aA</button>\
-                     <button id="searchbar_wrap" class="btn btn-primary fa fa-level-up searchbar_buttons" data-toggle="button" value="OFF" title="Wrap search"></button>\
+                     <button id="searchbar_wrap" class="btn btn-primary fa fa-level-up searchbar_buttons" data-toggle="button" value="OFF" title="wrap search"></button>\
+                     <button id="searchbar_case_sensitive" class="btn btn-primary searchbar_buttons" data-toggle="button" value="OFF" title="case sensitive search">aA</button>\
+                     <button id="searchbar_search" class="btn btn-primary fa fa-search searchbar_buttons" title="find next"></button>\
                    </div>\
                     <div class="btn-group">\
                     <label for="usr">Replace text:</label>\
                      <input id="searchbar_replace_text" type="text" class="form-control searchbar_input">\
-                     <button type="button" id="searchbar_replace" class="btn btn-primary fa fa-search searchbar_buttons" title="Replace string"></button>\
+                     <button type="button" id="searchbar_replace" class="btn btn-primary fa fa-search-plus searchbar_buttons" title="replace and find next"></button>\
                    </div>\
                  </div>';
 
@@ -151,9 +159,9 @@ define([
    */
   var toggle_toolbar = function() {
     var dom = $("#searchbar-wrapper");
-    if( dom.length === 0 )
+    if( dom.length === 0 ) {
       dom = create_searchbar_div()
-    if (dom.is(':visible')) {
+    } else if( dom.is(':visible') ) {
       $('#toggle_searchbar').removeClass('active').blur();
       dom.hide();
     } else {
