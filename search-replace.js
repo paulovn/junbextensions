@@ -33,8 +33,11 @@ define([
     }
 
     // Get form fields
-    var button = $( replace ? '#searchbar_replace' : '#searchbar_search' )
-    button.removeClass( 'notfound' );
+    var button1 = $('#searchbar_search')
+    var button2 = $('#searchbar_replace')
+    button1.removeClass( 'notfound' );
+    button2.removeClass( 'notfound' );
+    var button = $( replace ? button2 : button1 )
     if( replace )
       replace = $('#searchbar_replace_text').val();
     var findString = $('#searchbar_search_text').val();
@@ -158,6 +161,7 @@ define([
    * Show/hide toolbar
    */
   var toggle_toolbar = function() {
+    // Show/hide the search toolbar
     var dom = $("#searchbar-wrapper");
     if( dom.length === 0 ) {
       dom = create_searchbar_div()
@@ -167,13 +171,14 @@ define([
     } else {
       $('#toggle_searchbar').addClass('active');
       dom.show();
-      // If there is a selection, add it as an initial search string
-      var sel =  IPython.notebook.get_selected_cell().code_mirror.getSelection();
-      if( sel.length ) {
-	$('#searchbar_search_text').val( sel );
-	$('#searchbar_replace').removeClass( 'notfound' );
-	$('#searchbar_search').removeClass( 'notfound' );
-      }
+    }
+
+    // If there is a selection, add it as an initial search string
+    var sel =  IPython.notebook.get_selected_cell().code_mirror.getSelection();
+    if( sel.length ) {
+      $('#searchbar_search_text').val( sel );
+      $('#searchbar_replace').removeClass( 'notfound' );
+      $('#searchbar_search').removeClass( 'notfound' );
     }
   };
 
