@@ -176,7 +176,13 @@ define( [
     //table_of_contents();
     // $([IPython.events]).on("notebook_loaded.Notebook", table_of_contents);
     $([IPython.events]).on("notebook_saved.Notebook", table_of_contents);
-    IPython.keyboard_manager.command_shortcuts.add_shortcuts(kb_shortcuts);
+    
+    //IPython.keyboard_manager.command_shortcuts.add_shortcuts(kb_shortcuts);
+    var action = IPython.keyboard_manager.actions.register(kb_shortcuts['t'],
+							   'table-of-contents',
+							   'notebook-extensions');
+    IPython.keyboard_manager.command_shortcuts.add_shortcut('t', action);
+
   };
 
   return {
