@@ -55,7 +55,7 @@ div#searchbar-wrapper.notfound  {
 }
 
 /* -------------------------------------------------------------------------- */
-/* not working yet */
+/* aspect while the extension is searching */
 
 div#searchbar-wrapper.searching  {
     background-color: lightgray;

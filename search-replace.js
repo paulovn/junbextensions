@@ -6,7 +6,7 @@
    Search can be case-sensitive or insensitive, and it can optionally wrap
    around the notebook.
 
-   Based on the Search&Replace extension at:
+   Originally based on the Search&Replace extension at:
     https://github.com/ipython-contrib/IPython-notebook-extensions/wiki/Search-&-Replace
 */
 
@@ -20,33 +20,12 @@ define([
   "use strict";
 
   /**
-   * Search/replace a string within the complete notebook, starting at 
-   * current cell or CodeMirror selection
-   * @param hotkey
-   * @param replace {boolean}
+   * The function carrying out the search loop across all cells
    * @returns {boolean}
    */
-  var search = function(hotkey,replace) {
-    /* execute search operation only after pressing return key or button click */
-    if (hotkey != null && hotkey != 13) {
-      return false;
-    }
+  var search_loop = function( findString, replace, caseInsensitive, do_wrap ) {
 
-    // Get form fields
-    var box = $('#searchbar-wrapper');
-    var button1 = $('#searchbar_search');
-    var button2 = $('#searchbar_replace');
-    box.removeClass( 'notfound' );
-    button1.removeClass( 'notfound searching' );
-    button2.removeClass( 'notfound searching' );
-    var button = $( replace ? button2 : button1 )
-    if( replace )
-      replace = $('#searchbar_replace_text').val();
-    var findString = $('#searchbar_search_text').val();
-    var caseInsensitive = ! $('#searchbar_case_sensitive').hasClass('active');
-    var do_wrap = $('#searchbar_wrap').hasClass('active');
-
-    // See what cell is currently selected
+    // See which cell is currently selected
     var ncells = IPython.notebook.ncells();
     var cindex = IPython.notebook.get_selected_index();
     var cell = IPython.notebook.get_cell( cindex );
@@ -62,8 +41,6 @@ define([
     }
 
     // Search across all cells in the notebook, starting from the current one
-    box.addClass( 'searching' );
-    button.addClass( 'searching' );
     for( var i=1; i<=ncells; i++ ) {
 
       // Unrender Markdown cells
@@ -73,15 +50,12 @@ define([
       // Search inside this cell, from the cursor current position
       var cur = cell.code_mirror.getCursor();
       var find = cell.code_mirror.getSearchCursor(findString,cur,caseInsensitive);
-
       if( find.find() == true ) {
 	// found! Select it and return
 	IPython.notebook.scroll_cell_percent( cindex, 50 );
 	cell.code_mirror.setSelection(find.pos.from,find.pos.to);
 	cell.code_mirror.focus();
-	box.removeClass( 'searching' );
-	button.removeClass( 'searching' );
-	return;
+	return true;
       }
       // Not found in this cell. Go to the next one
 
@@ -109,11 +83,58 @@ define([
       cell.code_mirror.setCursor( {line:0, ch:0} );
     }
 
-    // No match at all. Terminate search
-    button.removeClass( 'searching' ).addClass( 'notfound' );
-    box.removeClass( 'searching' ).addClass('notfound');
     cell.code_mirror.setCursor( {line:0, ch:0} );
     cell.code_mirror.focus();
+    return false;
+  };
+
+
+  /**
+   * Search/replace a string within the complete notebook, starting at 
+   * current cell or CodeMirror selection. 
+   * This is the function to be called when the user clicks on the search/replace 
+   * icon, or presses Return on the search box
+   * @param hotkey {integer}
+   * @param replace {boolean}
+   * @returns {boolean}
+   */
+  var search = function(hotkey,replace) {
+    /* execute search operation only after button click or Return key  */
+    if (hotkey != null && hotkey != 13) {
+      return false;
+    }
+
+    // Get form fields
+    var box = $('#searchbar-wrapper');
+    var button1 = $('#searchbar_search');
+    var button2 = $('#searchbar_replace');
+    if( replace )
+      replace = $('#searchbar_replace_text').val();
+    var findString = $('#searchbar_search_text').val();
+    var caseInsensitive = ! $('#searchbar_case_sensitive').hasClass('active');
+    var do_wrap = $('#searchbar_wrap').hasClass('active');
+
+    // Signal the start of the search
+    box.removeClass( 'notfound' ).addClass( 'searching' );
+    button1.removeClass( 'notfound searching' );
+    button2.removeClass( 'notfound searching' );
+    var button = $( replace ? button2 : button1 )
+    button.addClass( 'searching' );
+
+    // We use setTimeout to add the search process to the event loop, and therefore
+    // leave time for the main thread to render the CSS class changes in the DOM
+    setTimeout( function() {
+      // Search across all cells in the notebook, starting from the current one
+      var found = search_loop(findString, replace, caseInsensitive, do_wrap);
+      // Signal the end of the search
+      box.removeClass( 'searching' );
+      button.removeClass( 'searching' );
+      if( !found ) {
+	button.addClass( 'notfound' );
+	box.addClass('notfound');
+      }
+    }, 50 );
+
   };
 
 
@@ -204,7 +225,7 @@ define([
 
 
   // Add the toggle button to the Notebook toolbar
-   IPython.toolbar.add_buttons_group([
+  IPython.toolbar.add_buttons_group([
      {
        id : 'toggle_searchbar',
        label : 'Toggle Search Toolbar',
@@ -214,7 +235,7 @@ define([
          $('#searchbar_search_text')
        }
      }
-   ]);
+  ]);
   $("#toggle_searchbar").css( {'outline' : 'none'} );
 
 
