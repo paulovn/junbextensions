@@ -28,15 +28,17 @@ define([
    */
   var search = function(hotkey,replace) {
     /* execute search operation only after pressing return key or button click */
-    if (hotkey != 0 && hotkey != 13) {
+    if (hotkey != null && hotkey != 13) {
       return false;
     }
 
     // Get form fields
-    var button1 = $('#searchbar_search')
-    var button2 = $('#searchbar_replace')
-    button1.removeClass( 'notfound' );
-    button2.removeClass( 'notfound' );
+    var box = $('#searchbar-wrapper');
+    var button1 = $('#searchbar_search');
+    var button2 = $('#searchbar_replace');
+    box.removeClass( 'notfound' );
+    button1.removeClass( 'notfound searching' );
+    button2.removeClass( 'notfound searching' );
     var button = $( replace ? button2 : button1 )
     if( replace )
       replace = $('#searchbar_replace_text').val();
@@ -48,6 +50,7 @@ define([
     var ncells = IPython.notebook.ncells();
     var cindex = IPython.notebook.get_selected_index();
     var cell = IPython.notebook.get_cell( cindex );
+    var is_rendered = (cell.cell_type == "markdown") && (cell.rendered == true);
 
     // If we're replacing, and there's already a selected match, replace it
     if( replace ) {
@@ -57,14 +60,17 @@ define([
 	      (caseInsensitive && s.toUpperCase()==findString.toUpperCase())) )
 	    cell.code_mirror.replaceSelection(replace,'around');
     }
-      
+
     // Search across all cells in the notebook, starting from the current one
+    box.addClass( 'searching' );
+    button.addClass( 'searching' );
     for( var i=1; i<=ncells; i++ ) {
 
-      if (cell.rendered == true && cell.cell_type == "markdown" ) 
+      // Unrender Markdown cells
+      if( is_rendered )
 	cell.unrender();
 
-      // Search in this cell, from the cursor current position
+      // Search inside this cell, from the cursor current position
       var cur = cell.code_mirror.getCursor();
       var find = cell.code_mirror.getSearchCursor(findString,cur,caseInsensitive);
 
@@ -73,6 +79,8 @@ define([
 	IPython.notebook.scroll_cell_percent( cindex, 50 );
 	cell.code_mirror.setSelection(find.pos.from,find.pos.to);
 	cell.code_mirror.focus();
+	box.removeClass( 'searching' );
+	button.removeClass( 'searching' );
 	return;
       }
       // Not found in this cell. Go to the next one
@@ -81,23 +89,29 @@ define([
       if( cell.code_mirror.somethingSelected() )
 	cell.code_mirror.setCursor( {line:0, ch:0} );
 
+      // Render Markdown cells again
+      if( is_rendered )
+	cell.render();
+
       // Find the next cell
       if( cindex < ncells-1 )
 	cindex++;
       else if( do_wrap )
-	cindex = 0
+	cindex = 0;
       else
 	break; // Not found in the whole notebook. We're done
 
       // Prepare the next cell for searching
+      cell = IPython.notebook.get_cell( cindex );
+      is_rendered = (cell.cell_type == "markdown") && (cell.rendered == true);
       IPython.notebook.select( cindex );
       IPython.notebook.edit_mode();
-      cell = IPython.notebook.get_cell( cindex );
       cell.code_mirror.setCursor( {line:0, ch:0} );
     }
 
     // No match at all. Terminate search
-    button.addClass( 'notfound' );
+    button.removeClass( 'searching' ).addClass( 'notfound' );
+    box.removeClass( 'searching' ).addClass('notfound');
     cell.code_mirror.setCursor( {line:0, ch:0} );
     cell.code_mirror.focus();
   };
@@ -113,7 +127,7 @@ define([
                      <input id="searchbar_search_text" type="text" class="form-control searchbar_input">\
                      <button id="searchbar_wrap" class="btn btn-primary fa fa-level-up searchbar_buttons" data-toggle="button" value="OFF" title="wrap search"></button>\
                      <button id="searchbar_case_sensitive" class="btn btn-primary searchbar_buttons" data-toggle="button" value="OFF" title="case sensitive search">aA</button>\
-                     <button id="searchbar_search" class="btn btn-primary fa fa-search searchbar_buttons" title="find next"></button>\
+                     <button id="searchbar_search" class="btn btn-primary fa fa-search searchbar_buittons" title="find next"></button>\
                    </div>\
                     <div class="btn-group">\
                     <label for="usr">Replace text:</label>\
@@ -132,17 +146,20 @@ define([
     $("#header").append(searchbar_wrapper);
     //$("#searchbar-wrapper").css({'position' : 'absolute'});
 
-    $('#searchbar_search').on('click', function() { search(0,false); this.blur(); })
+    // Click events
+    $('#searchbar_search').on('click', function() { search(null,false); this.blur(); })
       .tooltip( {show: 500, hide: 100} );
     $('#searchbar_case_sensitive').on('click', function() {  this.blur(); })
       .tooltip( {show: 500, hide: 100} );
     $('#searchbar_wrap').on('click', function() {  this.blur(); })
       .tooltip( {show: 500, hide: 100} );
-    $('#searchbar_replace').on('click', function() { search(0,true); this.blur(); })
+    $('#searchbar_replace').on('click', function() { search(null,true); this.blur(); })
       .tooltip( {show: 500, hide: 100} );
+
+    // Key events
     $('#searchbar_search_text').on('keyup', 
 				   function(event) { 
-				     $('#searchbar_search').removeClass('notfound');
+				     $('#searchbar_search').removeClass('notfound searching');
 				     search(event.keyCode,false); 
 				   }
 				  );
@@ -170,6 +187,9 @@ define([
       dom.hide();
     } else {
       $('#toggle_searchbar').addClass('active');
+      $('#searchbar_replace').removeClass( 'notfound' );
+      $('#searchbar_search').removeClass( 'notfound' );
+      dom.removeClass('searching notfound');
       dom.show();
     }
 

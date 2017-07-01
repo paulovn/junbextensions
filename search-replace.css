@@ -1,6 +1,6 @@
 #searchbar-wrapper {
   position: absolute;
-  background-color: #ffffff;
+  background-color: LightGoldenRodYellow;
   border-style: solid;
   border-radius: 5px;
   border-color: #aaaaaa;
@@ -24,15 +24,48 @@
   padding: 6px 2px 6px 2px;
 }
 
+
+/* -------------------------------------------------------------------------- */
+
 .btn-group button {
   margin-top: 2px;
   margin-right: 2px;
+}
+
+.btn-group button#searchbar_search {
+  float: right;
+}
+
+.btn-group button#searchbar_wrap.active {
+  background-color: green;
+}
+
+.btn-group button#searchbar_case_sensitive.active {
+  background-color: green;
+}
+
+/* -------------------------------------------------------------------------- */
+
+div#searchbar-wrapper.notfound  {
+    background-color: orange;
 }
 
 .btn-group button.notfound {
   background-color: red;
 }
 
-button#searchbar_search {
-  float: right;
+/* -------------------------------------------------------------------------- */
+/* not working yet */
+
+div#searchbar-wrapper.searching  {
+    background-color: lightgray;
 }
+
+.btn-group button.searching {
+  background-color: gray;
+}
+
+/* -------------------------------------------------------------------------- */
+
+/* Default selection highlight is too dull */
+.CodeMirror-selected { background: yellow !important; }
