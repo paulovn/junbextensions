@@ -16,7 +16,7 @@ define([
   'require',
   'codemirror/addon/search/search',
   'codemirror/addon/search/searchcursor'
-],   function(IPython, $, require) {
+],   function(Jupyter, $, require) {
   "use strict";
 
   /**
@@ -26,9 +26,9 @@ define([
   var search_loop = function( findString, replace, caseInsensitive, do_wrap ) {
 
     // See which cell is currently selected
-    var ncells = IPython.notebook.ncells();
-    var cindex = IPython.notebook.get_selected_index();
-    var cell = IPython.notebook.get_cell( cindex );
+    var ncells = Jupyter.notebook.ncells();
+    var cindex = Jupyter.notebook.get_selected_index();
+    var cell = Jupyter.notebook.get_cell( cindex );
     var is_rendered = (cell.cell_type == "markdown") && (cell.rendered == true);
 
     // If we're replacing, and there's already a selected match, replace it
@@ -52,7 +52,7 @@ define([
       var find = cell.code_mirror.getSearchCursor(findString,cur,caseInsensitive);
       if( find.find() == true ) {
 	// found! Select it and return
-	IPython.notebook.scroll_cell_percent( cindex, 50 );
+	Jupyter.notebook.scroll_cell_percent( cindex, 50 );
 	cell.code_mirror.setSelection(find.pos.from,find.pos.to);
 	cell.code_mirror.focus();
 	return true;
@@ -76,10 +76,10 @@ define([
 	break; // Not found in the whole notebook. We're done
 
       // Prepare the next cell for searching
-      cell = IPython.notebook.get_cell( cindex );
+      cell = Jupyter.notebook.get_cell( cindex );
       is_rendered = (cell.cell_type == "markdown") && (cell.rendered == true);
-      IPython.notebook.select( cindex );
-      IPython.notebook.edit_mode();
+      Jupyter.notebook.select( cindex );
+      Jupyter.notebook.edit_mode();
       cell.code_mirror.setCursor( {line:0, ch:0} );
     }
 
@@ -189,8 +189,8 @@ define([
 				      search(event.keyCode,true);
 				    } 
 				   );
-    IPython.notebook.keyboard_manager.register_events($('#searchbar_search_text'));
-    IPython.notebook.keyboard_manager.register_events($('#searchbar_replace_text'));
+    Jupyter.notebook.keyboard_manager.register_events($('#searchbar_search_text'));
+    Jupyter.notebook.keyboard_manager.register_events($('#searchbar_replace_text'));
     return searchbar_wrapper;
   };
 
@@ -215,7 +215,7 @@ define([
     }
 
     // If there is a selection, add it as an initial search string
-    var sel =  IPython.notebook.get_selected_cell().code_mirror.getSelection();
+    var sel =  Jupyter.notebook.get_selected_cell().code_mirror.getSelection();
     if( sel.length ) {
       $('#searchbar_search_text').val( sel );
       $('#searchbar_replace').removeClass( 'notfound' );
@@ -223,21 +223,31 @@ define([
     }
   };
 
+  var action_search = {
+    'id' : 'toggle_searchbar',
+    'help' : 'Search Toolbar',
+    'help_index' : 'se',
+    'icon' : 'fa-search',
+    'handler' : function () {
+      if (!$('#toggle_searchbar').hasClass('active'))
+        toggle_toolbar();
+      $('#searchbar_search_text').focus();
+      return false;
+    }
+  };
 
-  // Add the toggle button to the Notebook toolbar
-  IPython.toolbar.add_buttons_group([
-     {
-       id : 'toggle_searchbar',
-       label : 'Toggle Search Toolbar',
-       icon : 'fa-search',
-       callback : function () {
-         toggle_toolbar();
-         $('#searchbar_search_text')
-       }
-     }
-  ]);
-  $("#toggle_searchbar").css( {'outline' : 'none'} );
-
+  var action_replace = {
+    'id' : 'toggle_replacebar',
+    'help' : 'Search Toolbar',
+    'help_index' : 'se',
+    'icon' : 'fa-search',
+    'handler' : function () {
+      if (!$('#toggle_searchbar').hasClass('active'))
+        toggle_toolbar();
+      $('#searchbar_replace_text').focus();
+      return false;
+    }
+  };
 
   /**
    * Add a CSS file
@@ -251,56 +261,31 @@ define([
     document.getElementsByTagName("head")[0].appendChild(link);
   };
 
-
   /**
    * Initialize extension
    */
-  var load_ipython_extension = function() {
+  var load_extension = function() {
     load_css('./search-replace.css');
 
-    /* Add keyboard shortcuts for search and replace.
-     * Hardcoded for now, should be configurable
-     */
-    var shortcuts = {
-      'f' : {
-        help    : 'search',
-        help_index : 'se',
-        handler : function() {
-          if (!$('#toggle_searchbar').hasClass('active')) {
-            toggle_toolbar();
-          }
-          $('#searchbar_search_text').focus();
-          return false;
-        }
-      },
-      'Shift-f' : {
-        help    : 'replace',
-        help_index : 're',
-        handler : function() {
-          if (!$('#toggle_searchbar').hasClass('active')) {
-            toggle_toolbar();
-          }
-          $('#searchbar_replace_text').focus();
-          return false;
-        }
-      }
-    };
+    /* Search action & shortcut */
+    var full_action = 
+	Jupyter.notebook.keyboard_manager.actions.register(action_search,
+			       'search', 'notebook-extensions');
+    Jupyter.keyboard_manager.command_shortcuts.add_shortcut('f', full_action);
 
-    //IPython.keyboard_manager.command_shortcuts.add_shortcuts(shortcuts);
-    var action = 
-      IPython.keyboard_manager.actions.register(shortcuts['Shift-f'],
-						'search-and-replace',
-						'notebook-extensions');
-    IPython.keyboard_manager.command_shortcuts.add_shortcut('Shift-f', action);
-    var action = 
-      IPython.keyboard_manager.actions.register(shortcuts['f'],
-						'search',
-						'notebook-extensions');
-    IPython.keyboard_manager.command_shortcuts.add_shortcut('f', action);
+    /* Add it as a button too */
+    Jupyter.toolbar.add_buttons_group([full_action]);
+    $("#toggle_searchbar").css( {'outline' : 'none'} );
 
+    /* Replace action & shortcut */
+    var full_action =
+	Jupyter.notebook.keyboard_manager.actions.register(action_replace,
+			       'search-and-replace', 'notebook-extensions');
+    Jupyter.keyboard_manager.command_shortcuts.add_shortcut('Shift-f', full_action);
   };
 
   return {
-    load_ipython_extension : load_ipython_extension
+    load_ipython_extension : load_extension,
+    load_jupyter_extension : load_extension
   };
 });

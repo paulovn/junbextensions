@@ -7,7 +7,7 @@ define( [
   'base/js/namespace',
   'jquery',
   'require'
-], function(IPython, $, require) {
+], function(Jupyter, $, require) {
 
   "use strict";
 
@@ -49,29 +49,24 @@ define( [
     document.getElementsByTagName("head")[0].appendChild(link);
   };
 
-  // A keyboard shortcut
-  var kbd_shortcuts = {
-    'Shift-t' : {
-      help    : 'Toggle headers',
-      help_index : 'th',
-      handler : toggle_headers
-    }
+  var action = {
+    'help'    : 'Toggle headers',
+    'help_index' : 'th',
+    'handler' : toggle_headers
   };
 
   /**
    * Initialize extension
    */
-  var load_ipython_extension = function() {
+  var load_extension = function() {
     load_css('./toggle-headers.css');
     menubar_button();
-    //IPython.keyboard_manager.command_shortcuts.add_shortcuts(kbd_shortcuts);
-    var action = IPython.keyboard_manager.actions.register(kbd_shortcuts['Shift-t'],
-							   'toggle-headers',
-							   'notebook-extensions');
-    IPython.keyboard_manager.command_shortcuts.add_shortcut('Shift-t', action);
+    var full_action = Jupyter.notebook.keyboard_manager.actions.register(
+      action, 'toggle-headers', 'toggle-headers-extension');
+    Jupyter.keyboard_manager.command_shortcuts.add_shortcut('Shift-t', full_action);
   };
 
   return {
-    load_ipython_extension : load_ipython_extension
+    load_ipython_extension : load_extension
   };
 });
