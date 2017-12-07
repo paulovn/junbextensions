@@ -16,7 +16,7 @@ define( [
   "base/js/namespace",
   "jquery", 
   "require", 
-], function (IPython, $, require) {
+], function (Jupyter, $, require) {
 
   "use strict";
 
@@ -133,24 +133,6 @@ define( [
     table_of_contents();
   };
   
-  // Add the ToC toggle button to the toolbar
-  var toc_button = function () {
-    if (!IPython.toolbar) {
-      $([IPython.events]).on("app_initialized.NotebookApp", toc_button);
-      return;
-    }
-    if ($("#toc_button").length === 0) {
-      IPython.toolbar.add_buttons_group([
-        {
-          'label'   : 'Table of Contents',
-          'icon'    : 'fa-list',
-          'callback': toggle_toc,
-          'id'      : 'toc_button'
-        },
-      ]);
-    }
-  };
-  
   // Load a CSS file
   var load_css = function ( filename  ) {
     var link = document.createElement("link");
@@ -160,33 +142,31 @@ define( [
     document.getElementsByTagName("head")[0].appendChild(link);
   };
 
-  // Define the keyboard shortcut
-  var kb_shortcuts = {
-    't' : {
-      help    : 'Table of contents',
-      help_index : 'toc',
-      handler : toggle_toc
-    }
+  var action = {
+      'help'       : 'Table of contents',
+      'help_index' : 'toc',
+      'icon'       : 'fa-list',
+      'id'         : 'toc_button',
+      'handler'    : toggle_toc
   };
 
-  // Install the extension
-  var load_ipython_extension = function () {
-    load_css("./toc.css");
-    toc_button();
-    //table_of_contents();
-    // $([IPython.events]).on("notebook_loaded.Notebook", table_of_contents);
-    $([IPython.events]).on("notebook_saved.Notebook", table_of_contents);
-    
-    //IPython.keyboard_manager.command_shortcuts.add_shortcuts(kb_shortcuts);
-    var action = IPython.keyboard_manager.actions.register(kb_shortcuts['t'],
-							   'table-of-contents',
-							   'notebook-extensions');
-    IPython.keyboard_manager.command_shortcuts.add_shortcut('t', action);
+  // Define the keyboard shortcut
+  var kb_shortcuts = { 't' : action };
 
+  // Install the extension
+  var load_extension = function () {
+    load_css("./toc.css");
+    $([Jupyter.events]).on("notebook_saved.Notebook", table_of_contents);
+
+    var full_action = Jupyter.notebook.keyboard_manager.actions.register(action,
+           'table-of-contents', 'toc');
+    Jupyter.toolbar.add_buttons_group([full_action]);
+    Jupyter.keyboard_manager.command_shortcuts.add_shortcut('t', full_action);
   };
 
   return {
-    load_ipython_extension : load_ipython_extension,
+    load_ipython_extension : load_extension,
+    load_jupyter_extension : load_extension,
     toggle_toc : toggle_toc,
     table_of_contents : table_of_contents,    
   };
