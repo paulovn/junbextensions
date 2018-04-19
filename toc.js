@@ -100,16 +100,18 @@ define( [
     for( var idx=0; idx<hdrList.length; idx++ ) {
       var hdr = hdrList[idx];
       var level = hdr[0];
+      //console.log('add ' + hdr + ': ' + depth + ' -> ' + level);
       // skip below threshold, or headings with no ID to link to
       if (level > threshold || !hdr[1])
 	continue;
-      // walk down levels
+      // do we need to walk down levels?
       for (; depth < level; depth++) {
-        if( !li ) // a missing 1st level
+        if( !li ) // create insertion point, if needed
 	    li = ol.add("<li/>");
 	ol = $("<ol/>").addClass(listClass).appendTo(li);
+	li = null; // important if missing intermediate levels
       }
-      // walk up levels
+      // or up?
       for (; depth > level; depth--) {
 	// up twice: the enclosing <ol> and the <li> it was inserted in
         ol = ol.parent().parent();
